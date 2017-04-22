@@ -5,3 +5,9 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
+viso2
+viso2_slerp
+readme.txt
+*.a
+*.sh
+*.swp
