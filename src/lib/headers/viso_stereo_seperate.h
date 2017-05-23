@@ -23,6 +23,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #define VISO_STEREO_SEPERATE_H
 
 #include "viso_stereo.h"
+#include "ConvMatcher.h"
 #include "util.h"
 
 #include <opencv2/opencv.hpp>
@@ -54,6 +55,7 @@ public:
   bool calculateTranslation(Matrix R);
   using VisualOdometryStereo::process;
 
+  void setMatcher(Matcher *new_matcher);
 
 protected:
 

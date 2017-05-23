@@ -2,6 +2,7 @@
 #define UTIL_VISO_H
 
 #include "matrix.h"
+#include "matcher.h"
 #include "viso_stereo.h"
 #include <iostream>
 #include <fstream>
@@ -25,5 +26,7 @@ cv::Vec3d rotationMatrixToEulerAngles(Matrix R);
 void loadCalibParams(VisualOdometryStereo::parameters &param, std::string dir);
 
 void writePose(std::ofstream &output_file, Matrix &pose);
+
+void writeMatches(std::vector<Matcher::p_match> &matches, std::string output_file);
 
 #endif // UTIL_VISO_H

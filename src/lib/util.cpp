@@ -81,3 +81,10 @@ void writePose(ofstream &output_file, Matrix &pose) {
 }
 
 
+void writeMatches (std::vector<Matcher::p_match> &matches, std::string output_file) {
+  ofstream out(output_file);
+  for (auto match : matches) {
+    out << match.u1c << " " << match.v1c << " " << match.u1p << " " << match.v1p << " ";
+    out << match.u2c << " " << match.v2c << " " << match.u2p << " " << match.v2p << endl;
+  }
+}

@@ -28,6 +28,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <stdint.h>
 
 #include "slerp.h"
+#include "util.h"
 #include "viso_stereo_seperate.h"
 #include <png++/png.hpp>
 #include <boost/qvm/all.hpp>
@@ -63,11 +64,12 @@ int main (int argc, char** argv) {
   // for a full parameter list, look at: viso_stereo.h
   VisualOdometryStereoSeperate::parameters param;
   loadCalibParams(param, dir);
-  param.match.refinement = 2;
+  param.match.refinement = 2;//2;
   param.match.half_resolution = 0;
-  param.bucket.max_features = 2;
-  param.match.use_initial_descriptor = true;
-  param.match.sort = 1;
+  param.bucket.max_features = 2000;
+  param.match.use_initial_descriptor = false;
+  param.match.sort = 0;
+  param.match.multi_stage = 1;
 
   // init visual odometry
   VisualOdometryStereoSeperate viso_main(param);
@@ -116,6 +118,8 @@ int main (int argc, char** argv) {
       //process normal frame
       if (viso_main.process(left_img_data, right_img_data, dims)) {
         final_T = Matrix::inv(viso_main.getMotion());
+        auto matches = viso_main.getMatches();
+        writeMatches(matches, "../matches/sad/" + std::to_string(i));
       }
       else {
         final_T = Matrix::eye(4);

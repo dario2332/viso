@@ -31,6 +31,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <algorithm>
 #include <vector>
 #include <random>
+#include <string>
+#include <fstream>
 
 #include "matrix.h"
 
@@ -76,7 +78,7 @@ public:
   Matcher(parameters param);
 
   // deconstructor
-  ~Matcher();
+  virtual ~Matcher();
   
   // intrinsics
   void setIntrinsics(double f,double cu,double cv,double base) {
@@ -129,7 +131,7 @@ public:
 
   // feature bucketing: keeps only max_features per bucket, where the domain
   // is split into buckets of size (bucket_width,bucket_height)
-  void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
+  virtual void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
 
   // return vector with matched feature points and indices
   std::vector<Matcher::p_match> getMatches() { return p_matched_2; }
@@ -139,7 +141,14 @@ public:
   // and you want to cancel the change of (unknown) camera gain.
   float getGain (std::vector<int32_t> inliers);
 
-private:
+  void computeDescriptor (const int32_t &u,const int32_t &v,uint8_t *desc_addr);
+  
+protected:
+  virtual void findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,
+                         std::vector<int32_t> *k2,const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
+                         int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
+
+//private:
 
   // structure for storing interest points
   struct maximum {
@@ -202,9 +211,9 @@ private:
   // matching functions
   void computePriorStatistics (std::vector<Matcher::p_match> &p_matched,int32_t method);
   void createIndexVector (int32_t* m,int32_t n,std::vector<int32_t> *k,const int32_t &u_bin_num,const int32_t &v_bin_num);
-  inline void findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,
-                         std::vector<int32_t> *k2,const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
-                         int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
+//  inline void findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,
+//                         std::vector<int32_t> *k2,const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
+//                         int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
   void matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
                  int32_t n1p,int32_t n2p,int32_t n1c,int32_t n2c,
                  std::vector<Matcher::p_match> &p_matched,int32_t method,bool use_prior,Matrix *Tr_delta = 0);

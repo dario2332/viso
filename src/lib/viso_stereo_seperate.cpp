@@ -29,6 +29,12 @@ VisualOdometryStereoSeperate::VisualOdometryStereoSeperate (parameters param) : 
 VisualOdometryStereoSeperate::~VisualOdometryStereoSeperate() {
 }
 
+void VisualOdometryStereoSeperate::setMatcher(Matcher* new_matcher) {
+  delete matcher;
+  matcher = new_matcher;
+  matcher->setIntrinsics(param.calib.f,param.calib.cu,param.calib.cv,param.base);
+}
+
 cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match> &p_matched, VisualOdometry::parameters param) {
   cv::Mat E, R, t, mask;
   vector<cv::Point2d> points1, points2;

@@ -92,6 +92,11 @@ Matcher::~Matcher() {
   if (I2c_dv_full)  _mm_free(I2c_dv_full);
 }
 
+
+void Matcher::computeDescriptor (const int32_t &u,const int32_t &v,uint8_t *desc_addr) {
+  computeDescriptor(I1c_du, I1c_dv, dims_c[2], u, v, desc_addr);
+};
+
 void Matcher::pushBack (uint8_t *I1,uint8_t* I2,int32_t* dims,const bool replace) {
 
   // image dimensions
@@ -185,6 +190,9 @@ void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
   //////////////////
   // sanity check //
   //////////////////
+  
+  cout << "tr_delta" << endl;
+  Tr_delta = nullptr;
   
   // flow
   if (method==0) {
@@ -340,7 +348,8 @@ void Matcher::bucketFeatures(int32_t max_features,float bucket_width,float bucke
     buckets[v*bucket_cols+u].push_back(*it);
   }
   
-  srand(time(0));
+  //srand(time(0));
+  srand(0);
   // refill p_matched from buckets
   p_matched_2.clear();
   for (int32_t i=0; i<bucket_cols*bucket_rows; i++) {
@@ -971,7 +980,7 @@ void Matcher::createIndexVector (int32_t* m,int32_t n,vector<int32_t> *k,const i
   }
 }
 
-inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,vector<int32_t> *k2,
+void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,vector<int32_t> *k2,
                                 const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
                                 int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_,double v_) {
   
@@ -1043,6 +1052,7 @@ inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const 
       }
     }
   }
+  //cout << min_cost << endl;
 }
 
 void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
@@ -1289,6 +1299,7 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
 
 void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method) {
 
+  cout << "Size-begin: " << p_matched.size() << endl;
   // do we have enough points for outlier removal?
   if (p_matched.size()<=3)
     return;
@@ -1453,6 +1464,8 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
     if (num_support[i]>=4)
       p_matched.push_back(p_matched_copy[i]);
   
+
+  cout << "Size-end: " << p_matched.size() << endl;
   // free memory used for triangulation
   free(in.pointlist);
   free(out.pointlist);
