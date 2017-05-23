@@ -11,3 +11,9 @@ readme.txt
 *.a
 *.sh
 *.swp
+external
+bin
+.ycm*
+compile_commands.json
+cmake
+
