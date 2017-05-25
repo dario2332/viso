@@ -316,9 +316,9 @@ void Matcher::sortMatches(vector<p_match> &matches) {
   //}
 
   //for (int i = 0; i < matches.size(); ++i) {
-  //    int index = matches[i].i1c;
+  //    int index = matches[i].i1p;
   //    int add = 12*index;
-  //    cout << m1c2[add+2] << " ";
+  //    cout << m1p2[add+2] << " ";
   //}
   //cout << endl;
 }

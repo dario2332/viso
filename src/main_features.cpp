@@ -98,9 +98,9 @@ int main (int argc, char** argv) {
   loadCalibParams(param, dir);
   param.match.refinement = 2;//2
   param.match.half_resolution = 0;
-  param.bucket.max_features = 20000;
+  param.bucket.max_features = 2;
   param.match.use_initial_descriptor = false;
-  param.match.sort = 0;
+  param.match.sort = 1;
   param.ransac_iters = 1000;
   //param.match.multi_stage = 1;
 
