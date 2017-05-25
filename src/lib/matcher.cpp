@@ -191,9 +191,6 @@ void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
   // sanity check //
   //////////////////
   
-  cout << "tr_delta" << endl;
-  Tr_delta = nullptr;
-  
   // flow
   if (method==0) {
     if (m1p2==0 || n1p2==0 || m1c2==0 || n1c2==0)
@@ -1299,7 +1296,6 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
 
 void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method) {
 
-  cout << "Size-begin: " << p_matched.size() << endl;
   // do we have enough points for outlier removal?
   if (p_matched.size()<=3)
     return;
@@ -1465,7 +1461,6 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
       p_matched.push_back(p_matched_copy[i]);
   
 
-  cout << "Size-end: " << p_matched.size() << endl;
   // free memory used for triangulation
   free(in.pointlist);
   free(out.pointlist);

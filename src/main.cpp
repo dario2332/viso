@@ -69,7 +69,7 @@ int main (int argc, char** argv) {
   param.bucket.max_features = 2000;
   param.match.use_initial_descriptor = false;
   param.match.sort = 0;
-  param.match.multi_stage = 1;
+ // param.match.multi_stage = 1;
 
   // init visual odometry
   VisualOdometryStereoSeperate viso_main(param);

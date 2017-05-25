@@ -102,7 +102,7 @@ int main (int argc, char** argv) {
   param.match.use_initial_descriptor = false;
   param.match.sort = 0;
   param.ransac_iters = 1000;
-  param.match.multi_stage = 1;
+  //param.match.multi_stage = 1;
 
   ConvMatcher *matcher_conv   = new ConvMatcher(param.match, graph_path);
   // init visual odometry
