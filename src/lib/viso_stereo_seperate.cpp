@@ -35,7 +35,7 @@ void VisualOdometryStereoSeperate::setMatcher(Matcher* new_matcher) {
   matcher->setIntrinsics(param.calib.f,param.calib.cu,param.calib.cv,param.base);
 }
 
-cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match> &p_matched, VisualOdometry::parameters param) {
+cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match> &p_matched, VisualOdometryStereoSeperate::parameters param) {
   cv::Mat E, R, t, mask;
   vector<cv::Point2d> points1, points2;
   for (int i = 0; i < p_matched.size(); ++i) {
@@ -44,8 +44,23 @@ cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match
   }
   
   cv::Point2d pp = cv::Point2d(param.calib.cu, param.calib.cv);
+
   E = cv::findEssentialMat(points1, points2, param.calib.f, pp,  cv::RANSAC, 0.9999, 1.0, mask);
+
+  int inliers = 0, outliers = 0;
+  
+  //vector<Matcher::p_match> p_matched_copy;
   recoverPose(E, points1, points2, R, t, param.calib.f, pp, mask);
+  for (auto i = mask.begin<uchar>(); i != mask.end<uchar>(); ++i) {
+    if ((int)*i == 0) outliers++;
+    else {
+      inliers++;
+      //cout << i-mask.begin<uchar>() << endl;
+      //p_matched_copy.push_back(p_matched[i-mask.begin<uchar>()]);
+    }
+  }
+  //p_matched = p_matched_copy;
+  cout << inliers << " R/" <<  outliers << endl;
   return rotationMatrixToEulerAngles(R);
 }
 
@@ -67,9 +82,23 @@ void VisualOdometryStereoSeperate::setTranformation(Matrix T) {
 
 vector<double> VisualOdometryStereoSeperate::estimateMotion (vector<Matcher::p_match> p_matched) {
   
+  // get number of matches
+  int32_t N  = p_matched.size();
+  if (N<6)
+    return vector<double>();
+
   // return value
   bool success = true;
   
+  cv::Vec3d angles;
+  //estimate Rotation only with opencv
+  if (param.estimate_rotation) {
+    angles = estimateRotation(p_matched, param);
+  }
+  else {
+    angles = rotationMatrixToEulerAngles(R_);
+  }
+
   // compute minimum distance for RANSAC samples
   double width=0,height=0;
   for (vector<Matcher::p_match>::iterator it=p_matched.begin(); it!=p_matched.end(); it++) {
@@ -79,7 +108,7 @@ vector<double> VisualOdometryStereoSeperate::estimateMotion (vector<Matcher::p_m
   double min_dist = min(width,height)/3.0;
   
   // get number of matches
-  int32_t N  = p_matched.size();
+  N  = p_matched.size();
   if (N<6)
     return vector<double>();
 
@@ -108,14 +137,6 @@ vector<double> VisualOdometryStereoSeperate::estimateMotion (vector<Matcher::p_m
   // clear parameter vector
   inliers.clear();
 
-  cv::Vec3d angles;
-  //estimate Rotation only with opencv
-  if (param.estimate_rotation) {
-    angles = estimateRotation(p_matched, param);
-  }
-  else {
-    angles = rotationMatrixToEulerAngles(R_);
-  }
 
   for (int32_t i=0; i<3; i++)
     tr_delta_curr[i] = angles[i];
@@ -279,8 +300,8 @@ void VisualOdometryStereoSeperate::computeResidualsAndJacobian(vector<double> &t
     
     // weighting
     double weight = 1.0;
-    //if (param.reweighting)
-      //weight = 1.0/(fabs(p_observe[4*i+0]-param.calib.cu)/fabs(param.calib.cu) + 0.05);
+    if (param.reweighting)
+      weight = 1.0/(fabs(p_observe[4*i+0]-param.calib.cu)/fabs(param.calib.cu) + 0.05);
     
     // compute 3d point in current right coordinate system
     X2c = X1c-param.base;

@@ -59,7 +59,7 @@ public:
 
 protected:
 
-  cv::Vec3d estimateRotation(std::vector<Matcher::p_match> &p_matched, VisualOdometry::parameters param);
+  cv::Vec3d estimateRotation(std::vector<Matcher::p_match> &p_matched, VisualOdometryStereoSeperate::parameters param);
   virtual std::vector<double>  estimateMotion (std::vector<Matcher::p_match> p_matched);
   virtual result               updateParameters(std::vector<Matcher::p_match> &p_matched,std::vector<int32_t> &active,std::vector<double> &tr,double step_size,double eps);
   virtual void                 computeResidualsAndJacobian(std::vector<double> &tr,std::vector<int32_t> &active);
