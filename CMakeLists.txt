@@ -27,6 +27,13 @@ add_dependencies(viso_lib Eigen Protobuf)
 # make release version
 set(CMAKE_BUILD_TYPE Release)
 
+find_package(OpenMP)
+
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(ENV{OPENBLAS_NUM_THREADS} 4)
 
@@ -44,16 +51,21 @@ mark_as_advanced(EXTERNAL_DIR DOWNLOAD_LOCATION)
 
 add_executable(viso2 src/main.cpp )
 add_executable(viso2_slerp src/main_slerp.cpp )
-add_executable(viso2_features src/main_features.cpp src/ConvMatcher.cpp src/FeatureExtractor.cpp)
+add_executable(viso2_features src/main_features.cpp src/ConvMatcher.cpp src/FeatureExtractor.cpp src/CustomDetectorConvMatcher.cpp)
 add_executable(evaluate_sad_metric src/evaluate_sad_metric.cpp src/ConvMatcher.cpp src/FeatureExtractor.cpp)
 add_executable(evaluate_cnn_metric src/evaluate_cnn_metric.cpp src/ConvMatcher.cpp src/FeatureExtractor.cpp)
+
+add_executable(orb_viso src/main_orb_detector src/OrbMatcher.cpp src/FeatureExtractor.cpp)
+
+add_dependencies(orb_viso Eigen Protobuf)
 add_dependencies(viso2_features Eigen Protobuf)
 
 target_link_libraries (viso2 viso_lib png ${OpenCV_LIBS} )
 target_link_libraries (viso2_slerp viso_lib png ${OpenCV_LIBS} )
-target_link_libraries (viso2_features viso_lib png openblas ${Boost_LIBRARIES} ${OpenCV_LIBS} ${TensorFlow_LIBRARIES})
+target_link_libraries (viso2_features viso_lib png pthread openblas ${Boost_LIBRARIES} ${OpenCV_LIBS} ${TensorFlow_LIBRARIES})
 target_link_libraries (evaluate_sad_metric viso_lib png openblas ${Boost_LIBRARIES} ${OpenCV_LIBS} ${TensorFlow_LIBRARIES})
 target_link_libraries (evaluate_cnn_metric viso_lib png openblas ${Boost_LIBRARIES} ${OpenCV_LIBS} ${TensorFlow_LIBRARIES})
+target_link_libraries (orb_viso viso_lib openblas ${Boost_LIBRARIES} ${OpenCV_LIBS} ${TensorFlow_LIBRARIES})
 
 include_directories(${DIR}/headers src/lib/headers src/headers /opt/local/include /usr/local/boost_1_62_0 ${TensorFlow_INCLUDE_DIRS} ${EXTERNAL_DIR}/include)
 link_directories (${DIR}/src/utils /opt/local/lib /usr/local/boost_1_62_0/stage/lib)
