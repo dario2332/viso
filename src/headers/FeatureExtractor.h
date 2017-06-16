@@ -31,22 +31,36 @@ using tensorflow::Status;
 using tensorflow::string;
 using tensorflow::int32;
 
+class ImageDescriptor {
+  
+public:
+  ImageDescriptor (int w, int h, int d, string &image_path) : w(w), h(h), d(d), image_path(image_path), data(vector<float> (w*h*d)) {};
+  virtual ~ImageDescriptor () {};
+  float* getFeature(int u, int v);
+
+  int w, d, h;
+  vector<float> data;
+  string image_path;
+};
+
 class FeatureExtractor {
 
 public:
-    FeatureExtractor(string model_path, string input_layer="input_left_forward", string output_layer="output");
+    FeatureExtractor(string model_path, string left_input_layer="input_left_forward", string right_input_layer="input_right_forward", 
+                                        string left_output_layer="output_L", string right_output_layer="output_R");
     ~FeatureExtractor();
     
     int W, D, H;
-    float* getFeature(int u, int v);
-    void extractFeatures(string &image_path);
+    //float* getFeature(int u, int v);
+    void extractFeatures(string &left_image_path, string &right_image_path, shared_ptr<ImageDescriptor> &left, shared_ptr<ImageDescriptor> &right);
     void initDims(int w, int h, int d);
-    vector<float> data;
 
 private:
     std::unique_ptr<tensorflow::Session> session;
-    string input_layer;
-    string output_layer;
+    string left_input_layer;
+    string left_output_layer;
+    string right_input_layer;
+    string right_output_layer;
 
     Status LoadGraph(string graph_file_name, std::unique_ptr<tensorflow::Session>* session);
     Status ReadTensorFromImageFile(string file_name, const float input_mean, const float input_std,

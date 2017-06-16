@@ -277,50 +277,6 @@ void Matcher::updateMatches(vector<p_match> &matches) {
 void Matcher::sortMatches(vector<p_match> &matches) {
 
   sort(matches.begin(), matches.end(), [this](p_match &m1, p_match& m2) {return compareWithMaxima(m1, m2);});
-  //vector<vector<p_match> > matches_classes(4, vector<p_match>());
-
-  //for (vector<p_match>::iterator it=matches.begin(); it!=matches.end(); it++) {
-  //  int index = it->i1p;
-  //  int add = 12*index;
-  //  int c = m1p2[add+3];
-  //  matches_classes[c].push_back(*it);
-  //}
-  
-  //for (int i = 0; i < matches.size(); ++i) {
-    //sort(matches_classes[i].begin(), matches_classes[i].end(), [this](p_match &m1, p_match& m2) {return compareWithMaxima(m1, m2);});
-  //}
-  //reverse(matches_classes[0].begin(), matches_classes[0].end());
-  //reverse(matches_classes[2].begin(), matches_classes[2].end());
-
-  //int size = matches.size();
-  //matches.clear();
-  //int i = 0, k = 0;
-  //while (k < size) {
-  //  for (int j = 0; j < 4; ++j) {
-  //    if (i < matches_classes[j].size()) {
-  //      matches.push_back(matches_classes[j][i]);
-  //      k++;
-  //    }
-  //  }
-  //  i++;
-  //}
-
-  //for (int i = 0; i < 4; ++i) {
-  //  cout << "Class: " << i << endl;
-  //  for (int j = 0; j < matches_classes[i].size(); ++j) {
-  //    int index = matches_classes[i][j].i1c;
-  //    int add = 12*index;
-  //    cout << m1c2[add+2] << " ";
-  //  }
-  //  cout << endl;
-  //}
-
-  //for (int i = 0; i < matches.size(); ++i) {
-  //    int index = matches[i].i1p;
-  //    int add = 12*index;
-  //    cout << m1p2[add+2] << " ";
-  //}
-  //cout << endl;
 }
 
 void Matcher::bucketFeatures(int32_t max_features,float bucket_width,float bucket_height) {
@@ -346,7 +302,7 @@ void Matcher::bucketFeatures(int32_t max_features,float bucket_width,float bucke
   }
   
   //srand(time(0));
-  srand(0);
+  //srand(0);
   // refill p_matched from buckets
   p_matched_2.clear();
   for (int32_t i=0; i<bucket_cols*bucket_rows; i++) {
@@ -789,6 +745,8 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
   // get number of interest points and init maxima pointer to NULL
   num1 = maxima1.size();
   num2 = maxima2.size();
+  //cout << num1 << endl;
+  //cout << num2 << endl;
   max1 = 0;
   max2 = 0;
   
@@ -1183,9 +1141,14 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
     createIndexVector(m1c,n1c,k1c,u_bin_num,v_bin_num);
     createIndexVector(m2c,n2c,k2c,u_bin_num,v_bin_num);
     
+    auto p_matched_copy = p_matched;
+    p_matched_copy.resize(n1p);
     // for all points do
-    for (i1p=0; i1p<n1p; i1p++) {
+    #pragma omp parallel for
+    for (int32_t i1p=0; i1p<n1p; i1p++) {
 
+      int32_t i2p,i1c,i2c,i1c2,i1p2;
+      int32_t u1p,v1p,u2p,v2p,u1c,v1c,u2c,v2c;
       // coordinates
       u1p = *(m1p+step_size*i1p+0);
       v1p = *(m1p+step_size*i1p+1);
@@ -1236,9 +1199,23 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
         if (u1p>=u2p && u1c>=u2c) {
           
           // add match
-          p_matched.push_back(Matcher::p_match(u1p,v1p,i1p,u2p,v2p,i2p,
-                                               u1c,v1c,i1c,u2c,v2c,i2c));
+          
+          //p_matched.push_back(Matcher::p_match(u1p,v1p,i1p,u2p,v2p,i2p,
+                                               //u1c,v1c,i1c,u2c,v2c,i2c));
+          p_matched_copy[i1p] = Matcher::p_match(u1p,v1p,i1p,u2p,v2p,i2p, u1c,v1c,i1c,u2c,v2c,i2c);
         }
+        else {
+          p_matched_copy[i1p] = Matcher::p_match(u1p,v1p,-1,u2p,v2p,i2p, u1c,v1c,i1c,u2c,v2c,i2c);
+        }
+      }
+      else {
+        p_matched_copy[i1p] = Matcher::p_match(u1p,v1p,-1,u2p,v2p,i2p, u1c,v1c,i1c,u2c,v2c,i2c);
+      }
+    }
+
+    for (int i = 0; i < p_matched_copy.size(); ++i) {
+      if (p_matched_copy[i].i1p >= 0) {
+        p_matched.push_back(p_matched_copy[i]);
       }
     }
     

@@ -2,7 +2,10 @@
 
 //std::unique_ptr<tensorflow::Session> FeatureExtractor::session;
 
-FeatureExtractor::FeatureExtractor(string graph_path, string input_layer, string output_layer) : input_layer(input_layer), output_layer(output_layer) {
+FeatureExtractor::FeatureExtractor(string graph_path, string left_input_layer, string right_input_layer, 
+                                   string left_output_layer, string right_output_layer) : 
+                                   left_input_layer(left_input_layer), right_input_layer(right_input_layer), 
+                                   left_output_layer(left_output_layer), right_output_layer(right_output_layer), W(0), D(0), H(0) {
 
 //  static bool loaded = false;
 //  if (!loaded) {
@@ -52,9 +55,11 @@ Status FeatureExtractor::ReadTensorFromImageFile(string file_name,
   // have to add a batch dimension of 1 to the start with ExpandDims().
   auto dims_expander = ExpandDims(root, float_caster, 0);
   // Subtract the mean and divide by the scale.
-  Div(root.WithOpName(output_name), Sub(root, dims_expander, {input_mean}),
-      {input_std});
+  Div(root.WithOpName(output_name), Sub(root, dims_expander, {0.0f}),
+      {256.0f});
 
+  Div(root.WithOpName(output_name), Sub(root, dims_expander, {0.39f}),
+      {0.3f});
   // This runs the GraphDef network definition that we've just constructed, and
   // returns the results in the output tensor.
   
@@ -95,7 +100,8 @@ Status FeatureExtractor::LoadGraph(string graph_file_name,
 }
 
 
-void FeatureExtractor::extractFeatures(string &image_path) {
+void FeatureExtractor::extractFeatures(string &left_image_path, string &right_image_path,
+                                                              shared_ptr<ImageDescriptor> &left, shared_ptr<ImageDescriptor> &right) {
 
   // Get the image from disk as a float array of numbers, resized and normalized
   // to the specifications the main graph expects.
@@ -103,30 +109,43 @@ void FeatureExtractor::extractFeatures(string &image_path) {
   float input_std = 256;
   std::vector<Tensor> resized_tensors;
   Status read_tensor_status =
-      ReadTensorFromImageFile(image_path, input_mean, input_std, &resized_tensors);
+      ReadTensorFromImageFile(left_image_path, input_mean, input_std, &resized_tensors);
   if (!read_tensor_status.ok()) {
     LOG(ERROR) << read_tensor_status;
     //return -1;
   }
-  const Tensor& resized_tensor = resized_tensors[0];
+  const Tensor resized_tensor_L = resized_tensors[0];
 
+  resized_tensors.clear();
+  read_tensor_status =
+      ReadTensorFromImageFile(right_image_path, input_mean, input_std, &resized_tensors);
+  if (!read_tensor_status.ok()) {
+    LOG(ERROR) << read_tensor_status;
+    //return -1;
+  }
+  const Tensor resized_tensor_R = resized_tensors[0];
   // Actually run the image through the model.
   std::vector<Tensor> outputs;
-  Status run_status = session->Run({{input_layer, resized_tensor}},
-                                   {output_layer}, {}, &outputs);
+  Status run_status = session->Run({{left_input_layer, resized_tensor_L}, {right_input_layer, resized_tensor_R}},
+                                   {left_output_layer, right_output_layer}, {}, &outputs);
   if (!run_status.ok()) {
     LOG(ERROR) << "Running model failed: " << run_status;
     //return -1;
   }
 
-  tensorflow::TTypes<float>::Flat final_tensor = outputs[0].flat<float>();
-  std::copy (&final_tensor(0), &final_tensor(W*H*D-1), data.begin());
+  left = shared_ptr<ImageDescriptor> (new ImageDescriptor(W, H, D, left_image_path));
+  right = shared_ptr<ImageDescriptor> (new ImageDescriptor(W, H, D, right_image_path));
+
+  tensorflow::TTypes<float>::Flat final_tensor_L = outputs[0].flat<float>();
+  tensorflow::TTypes<float>::Flat final_tensor_R = outputs[1].flat<float>();
+  std::copy (&final_tensor_L(0), &final_tensor_L(W*H*D-1), left->data.begin());
+  std::copy (&final_tensor_R(0), &final_tensor_R(W*H*D-1), right->data.begin());
 }
 
 
 //u-W ,  v-H
-float* FeatureExtractor::getFeature(int u, int v) {
-  return &data.at(W * D * v + D * u);
+float* ImageDescriptor::getFeature(int u, int v) {
+  return &data.at(w * d * v + d * u);
 }
 
 FeatureExtractor::~FeatureExtractor() {
@@ -134,5 +153,5 @@ FeatureExtractor::~FeatureExtractor() {
 
 void FeatureExtractor::initDims(int w, int h, int d) {
   W = w; H = h; D = d;
-  data.resize(W*H*D);
+  //data.resize(W*H*D);
 }

@@ -24,9 +24,10 @@ public:
   ConvMatcher(parameters param, string &graph_path);
   virtual ~ConvMatcher(); 
 
-//  virtual void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
+  virtual void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
 
-  void pushBackFetures (string left, string right="");
+//  virtual void pushBackFetures (string left, string right="");
+  virtual void pushBackFeatures (shared_ptr<ImageDescriptor> left, shared_ptr<ImageDescriptor> right);
 
   void computeDescriptor (const int32_t &u,const int32_t &v, float *desc_addr);
 
@@ -38,16 +39,19 @@ protected:
                          int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
 
 private:
-  void sortMatchesByScore(vector<p_match> &matches);
-  float matchScore(const p_match &match);
+  void fixMatches(vector<p_match> &matches);
+  bool fixMatch(const float &u1, const float &v1, float &u2, float &v2, shared_ptr<ImageDescriptor> first, shared_ptr<ImageDescriptor> second, int n=1);
 
-  FeatureExtractor* getExtractor(int32_t* m);
+  void sortMatchesByScore(vector<p_match> &matches, bool only_left_score=false);
+  float matchScore(const p_match &match, bool only_left_score=false);
+
+  shared_ptr<ImageDescriptor> getExtractor(int32_t* m);
   void calculateDotProducts(vector<p_match> &matches);
 
-  FeatureExtractor *left_prev_features;
-  FeatureExtractor *right_prev_features;
-  FeatureExtractor *left_curr_features;
-  FeatureExtractor *right_curr_features;
+  shared_ptr<ImageDescriptor> left_prev_features;
+  shared_ptr<ImageDescriptor> right_prev_features;
+  shared_ptr<ImageDescriptor> left_curr_features;
+  shared_ptr<ImageDescriptor> right_curr_features;
  
 };
 

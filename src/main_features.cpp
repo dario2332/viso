@@ -29,6 +29,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 
 #include "slerp.h"
 #include "viso_stereo_seperate.h"
+#include "CustomDetectorConvMatcher.h"
+
 #include <png++/png.hpp>
 #include <boost/qvm/all.hpp>
 #include <opencv2/opencv.hpp>
@@ -56,6 +58,10 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
 
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <chrono>
 // These are all common classes it's handy to reference with no namespace.
 using namespace std;
 using namespace cv;
@@ -65,6 +71,30 @@ using tensorflow::Status;
 using tensorflow::string;
 using tensorflow::int32;
 
+
+std::mutex m;
+std::condition_variable c_v;
+queue<shared_ptr<ImageDescriptor> > left_descriptors;
+queue<shared_ptr<ImageDescriptor> > right_descriptors;
+
+void loadImages(shared_ptr<FeatureExtractor> extractor, string dir, int num_frames) {
+
+  for (int32_t i=0; i<num_frames; i++) {
+
+    char base_name[256]; sprintf(base_name,"%06d",i);
+    string left_img_file_name  = dir + "/image_0/" + base_name + ".png";
+    string right_img_file_name = dir + "/image_1/" + base_name + ".png";
+    shared_ptr<ImageDescriptor> left, right;
+    extractor->extractFeatures(left_img_file_name, right_img_file_name, left, right);
+
+    std::unique_lock<std::mutex> lk(m);
+    c_v.wait(lk, []{return left_descriptors.size() < 4 && right_descriptors.size() < 4;});
+    left_descriptors.push(left);
+    right_descriptors.push(right);
+    lk.unlock();
+    c_v.notify_all();
+  }
+}
 
 int main (int argc, char** argv) {
 
@@ -87,7 +117,7 @@ int main (int argc, char** argv) {
   string dir = argv[1];
   int num_frames = atoi(argv[2]);
   string result_file = argv[3];
-  string graph_path="trained/model.pb";
+  string graph_path="trained/model_LR.pb";
 
   ofstream output_file;
   output_file.open(result_file.c_str());
@@ -96,15 +126,25 @@ int main (int argc, char** argv) {
   // for a full parameter list, look at: viso_stereo.h
   VisualOdometryStereoSeperate::parameters param;
   loadCalibParams(param, dir);
-  param.match.refinement = 2;//2
+  param.match.refinement = 0;
   param.match.half_resolution = 0;
-  param.bucket.max_features = 2;
   param.match.use_initial_descriptor = false;
   param.match.sort = 1;
-  param.ransac_iters = 1000;
-  //param.match.multi_stage = 1;
+  param.ransac_iters = 10000;
+  param.inlier_threshold = 2.0;
+  param.reweighting = false;
+  param.match.multi_stage = 1;
+  param.bucket.max_features = 2;
+  //TODO  change maxima
+  //TODO  stereo right
+  //param.match.nms_n = 1;
+  //param.bucket.bucket_width = 2000;
+  //param.bucket.bucket_height = 2000;
+  Ptr<Feature2D> detector = cv::ORB::create(20000);
+  //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 20);
+  //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 10);
 
-  ConvMatcher *matcher_conv   = new ConvMatcher(param.match, graph_path);
+  CustomDetectorConvMatcher *matcher_conv   = new CustomDetectorConvMatcher(param.match, graph_path, detector);
   // init visual odometry
   VisualOdometryStereoSeperate viso_main(param);
   viso_main.setMatcher(matcher_conv);
@@ -113,9 +153,14 @@ int main (int argc, char** argv) {
   // frame's camera coordinates to the first frame's camera coordinates)
   Matrix pose = Matrix::eye(4);
 
+  srand(0);
 
+  shared_ptr<FeatureExtractor> extractor(new FeatureExtractor(graph_path));
+
+  std::thread t;
   for (int32_t i=0; i<num_frames; i++) {
 
+    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
     // input file names
     //char base_name[256]; sprintf(base_name,"%06d.png",i);
     char base_name[256]; sprintf(base_name,"%06d",i);
@@ -133,8 +178,20 @@ int main (int argc, char** argv) {
       int32_t width  = left_img.get_width();
       int32_t height = left_img.get_height();
 
-      if (i == 0) matcher_conv->setDims(width, height);
-      matcher_conv->pushBackFetures(left_img_file_name, right_img_file_name);
+      if (i == 0) {
+        extractor->initDims(width, height, 64);
+        t = std::thread(loadImages, extractor, dir, num_frames);
+      }
+
+      std::unique_lock<std::mutex> lk(m);
+      c_v.wait(lk, []{return left_descriptors.size() > 0 && right_descriptors.size() > 0;});
+
+      matcher_conv->pushBackFeatures(left_descriptors.front(), right_descriptors.front());
+      left_descriptors.pop();
+      right_descriptors.pop();
+
+      lk.unlock();
+      c_v.notify_all();
 
       // convert input images to uint8_t buffer
       uint8_t* left_img_data  = (uint8_t*)malloc(width*height*sizeof(uint8_t));
@@ -156,6 +213,7 @@ int main (int argc, char** argv) {
       //process normal frame
       if (viso_main.process(left_img_data, right_img_data, dims)) {
         final_T = Matrix::inv(viso_main.getMotion());
+        cout << viso_main.getNumberOfInliers() << "/" << viso_main.getMatches().size() << endl;
         auto matches = viso_main.getMatches();
         writeMatches(matches, "../matches/conv/" + std::to_string(i));
       }
@@ -184,12 +242,18 @@ int main (int argc, char** argv) {
       free(right_img_data);
 
     // catch image read errors here
-    } catch (...) {
+    } catch (const std::exception &e) {
       cerr << "ERROR: Couldn't read input files!" << endl;
+      cout << e.what() << endl;
       return 1;
     }
+
+    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+    cout << "Duration: " << duration << endl;
   }
   
+  t.join();
   // output
   cout << "Demo complete! Exiting ..." << endl;
   output_file.close();
