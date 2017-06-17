@@ -68,10 +68,10 @@ private:
   vector<Matcher::p_match> matches;
   vector<KeyPoint> prev_points;
 
-  FeatureExtractor *left_prev_features;
-  FeatureExtractor *right_prev_features;
-  FeatureExtractor *left_curr_features;
-  FeatureExtractor *right_curr_features;
+  shared_ptr<ImageDescriptor> left_prev_features;
+  shared_ptr<ImageDescriptor> right_prev_features;
+  shared_ptr<ImageDescriptor> left_curr_features;
+  shared_ptr<ImageDescriptor> right_curr_features;
  
   vector<int> oneWayMatching(const vector<KeyPoint> &points1, const vector<KeyPoint> &points2,
                              FeatureExtractor *first_extractor, FeatureExtractor *second_extractor, vector<float> &similarity);

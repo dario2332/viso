@@ -1,25 +1,3 @@
-/*
-Copyright 2012. All rights reserved.
-Institute of Measurement and Control Systems
-Karlsruhe Institute of Technology, Germany
-
-This file is part of libviso2.
-Authors: Andreas Geiger
-
-libviso2 is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or any later version.
-
-libviso2 is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301, USA 
-*/
-
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -31,13 +9,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include "util.h"
 #include "viso_stereo_seperate.h"
 #include <png++/png.hpp>
-#include <boost/qvm/all.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/xfeatures2d.hpp>
-#include <opencv2/core/cvstd.hpp>
-#include <opencv2/surface_matching.hpp>
 
 using namespace cv;
 using namespace std;

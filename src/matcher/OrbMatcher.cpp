@@ -6,17 +6,9 @@
 using namespace std;
 
 OrbMatcher::OrbMatcher(string &graph_path, Ptr<Feature2D> detector, OrbMatcher::Params params) : detector(detector), params(params) {
-  left_prev_features = new FeatureExtractor(graph_path);
-  right_prev_features = new FeatureExtractor(graph_path);
-  left_curr_features = new FeatureExtractor(graph_path);
-  right_curr_features = new FeatureExtractor(graph_path);
 }
 
 OrbMatcher::~OrbMatcher() {
-  delete left_prev_features;
-  delete right_prev_features;
-  delete left_curr_features;
-  delete right_curr_features;
 }
 
 float OrbMatcher::complexMetric(const KeyPoint &point1, const KeyPoint &point2, FeatureExtractor *first_extractor, FeatureExtractor *second_extractor) {
