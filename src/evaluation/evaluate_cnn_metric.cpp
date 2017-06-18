@@ -28,7 +28,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <stdint.h>
 
 #include "slerp.h"
-#include "viso_stereo_seperate.h"
+#include "Egomotion"
 #include <png++/png.hpp>
 #include <boost/qvm/all.hpp>
 #include <opencv2/opencv.hpp>
@@ -140,7 +140,7 @@ int main (int argc, char** argv) {
   
   // set most important visual odometry parameters
   // for a full parameter list, look at: viso_stereo.h
-  VisualOdometryStereoSeperate::parameters param;
+  Egomotion::parameters param;
   loadCalibParams(param, dir);
   param.match.refinement = 2;
   param.match.half_resolution = 0;

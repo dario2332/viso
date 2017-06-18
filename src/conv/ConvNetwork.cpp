@@ -1,11 +1,11 @@
-#include "FeatureExtractor.h"
+#include "ConvNetwork.h"
 
-//std::unique_ptr<tensorflow::Session> FeatureExtractor::session;
+//std::unique_ptr<tensorflow::Session> ConvNetwork::session;
 
-FeatureExtractor::FeatureExtractor(string graph_path, string left_input_layer, string right_input_layer, 
+ConvNetwork::ConvNetwork(string graph_path, string left_input_layer, string right_input_layer, 
                                    string left_output_layer, string right_output_layer) : 
                                    left_input_layer(left_input_layer), right_input_layer(right_input_layer), 
-                                   left_output_layer(left_output_layer), right_output_layer(right_output_layer), W(0), D(0), H(0) {
+                                   left_output_layer(left_output_layer), right_output_layer(right_output_layer) {
 
 //  static bool loaded = false;
 //  if (!loaded) {
@@ -22,7 +22,7 @@ FeatureExtractor::FeatureExtractor(string graph_path, string left_input_layer, s
 
 // Given an image file name, read in the data, try to decode it as an image,
 // resize it to the requested size, and then scale the values as desired.
-Status FeatureExtractor::ReadTensorFromImageFile(string file_name, 
+Status ConvNetwork::ReadTensorFromImageFile(string file_name, 
                                const float input_mean,
                                const float input_std,
                                std::vector<Tensor>* out_tensors) {
@@ -75,7 +75,7 @@ Status FeatureExtractor::ReadTensorFromImageFile(string file_name,
 
 // Reads a model graph definition from disk, and creates a session object you
 // can use to run it.
-Status FeatureExtractor::LoadGraph(string graph_file_name,
+Status ConvNetwork::LoadGraph(string graph_file_name,
                  std::unique_ptr<tensorflow::Session>* session) {
   tensorflow::GraphDef graph_def;
   Status load_graph_status =
@@ -100,7 +100,7 @@ Status FeatureExtractor::LoadGraph(string graph_file_name,
 }
 
 
-void FeatureExtractor::extractFeatures(string &left_image_path, string &right_image_path,
+void ConvNetwork::extractFeatures(string &left_image_path, string &right_image_path,
                                                               shared_ptr<ImageDescriptor> &left, shared_ptr<ImageDescriptor> &right) {
 
   // Get the image from disk as a float array of numbers, resized and normalized
@@ -133,25 +133,20 @@ void FeatureExtractor::extractFeatures(string &left_image_path, string &right_im
     //return -1;
   }
 
-  left = shared_ptr<ImageDescriptor> (new ImageDescriptor(W, H, D, left_image_path));
-  right = shared_ptr<ImageDescriptor> (new ImageDescriptor(W, H, D, right_image_path));
+  
+  int w = outputs[0].dim_size(2);
+  int h = outputs[0].dim_size(1);
+  int d = outputs[0].dim_size(3);
+  left = shared_ptr<ImageDescriptor> (new ImageDescriptor(w, h, d, left_image_path));
+  right = shared_ptr<ImageDescriptor> (new ImageDescriptor(w, h, d, right_image_path));
 
   tensorflow::TTypes<float>::Flat final_tensor_L = outputs[0].flat<float>();
   tensorflow::TTypes<float>::Flat final_tensor_R = outputs[1].flat<float>();
-  std::copy (&final_tensor_L(0), &final_tensor_L(W*H*D-1), left->data.begin());
-  std::copy (&final_tensor_R(0), &final_tensor_R(W*H*D-1), right->data.begin());
+  std::copy (&final_tensor_L(0), &final_tensor_L(w*h*d-1), left->data.begin());
+  std::copy (&final_tensor_R(0), &final_tensor_R(w*h*d-1), right->data.begin());
+}
+
+ConvNetwork::~ConvNetwork() {
 }
 
 
-//u-W ,  v-H
-float* ImageDescriptor::getFeature(int u, int v) {
-  return &data.at(w * d * v + d * u);
-}
-
-FeatureExtractor::~FeatureExtractor() {
-}
-
-void FeatureExtractor::initDims(int w, int h, int d) {
-  W = w; H = h; D = d;
-  //data.resize(W*H*D);
-}

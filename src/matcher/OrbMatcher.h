@@ -15,7 +15,7 @@
 
 #include "matrix.h"
 #include "matcher.h"
-#include "FeatureExtractor.h"
+#include "ConvNetwork.h"
 
 using namespace cv;
 
@@ -74,11 +74,11 @@ private:
   shared_ptr<ImageDescriptor> right_curr_features;
  
   vector<int> oneWayMatching(const vector<KeyPoint> &points1, const vector<KeyPoint> &points2,
-                             FeatureExtractor *first_extractor, FeatureExtractor *second_extractor, vector<float> &similarity);
+                             ConvNetwork *first_extractor, ConvNetwork *second_extractor, vector<float> &similarity);
 
   void computeMatches(vector<KeyPoint> &curr_points);
 
-  void findDisparity(float &u, float &v, FeatureExtractor *left_extractor, FeatureExtractor *right_extractor);
+  void findDisparity(float &u, float &v, ConvNetwork *left_extractor, ConvNetwork *right_extractor);
 
   void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
 
@@ -87,7 +87,7 @@ private:
 
   void nonMaxSuppression(vector<KeyPoint> &points, Mat &img, float min_distance = 3);
 
-  float complexMetric(const KeyPoint &point1, const KeyPoint &point2, FeatureExtractor *first_extractor, FeatureExtractor *second_extractor);
+  float complexMetric(const KeyPoint &point1, const KeyPoint &point2, ConvNetwork *first_extractor, ConvNetwork *second_extractor);
 };
 
 #endif

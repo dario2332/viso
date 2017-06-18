@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "slerp.h"
-#include "viso_stereo_seperate.h"
+#include "Egomotion.h"
 #include <png++/png.hpp>
 #include <boost/qvm/all.hpp>
 #include <opencv2/opencv.hpp>
@@ -68,7 +68,7 @@ int main (int argc, char** argv) {
   
   // set most important visual odometry parameters
   // for a full parameter list, look at: viso_stereo.h
-  VisualOdometryStereoSeperate::parameters param;
+  Egomotion::parameters param;
   loadCalibParams(param, dir);
   param.ransac_iters = 10000;
   param.inlier_threshold = 1.0;
@@ -85,7 +85,7 @@ int main (int argc, char** argv) {
 
   OrbMatcher matcher(graph_path, detector, matcher_params);
   // init visual odometry
-  VisualOdometryStereoSeperate viso_main(param);
+  Egomotion viso_main(param);
   
   // current pose (this matrix transforms a point from the current
   // frame's camera coordinates to the first frame's camera coordinates)
@@ -101,7 +101,6 @@ int main (int argc, char** argv) {
     string left_img_file_name  = dir + "/image_0/" + base_name + ".png";
     string right_img_file_name = dir + "/image_1/" + base_name + ".png";
     
-//  if (i == 0) matcher_conv->setDims(width, height);
     matcher.pushBack(left_img_file_name, right_img_file_name);
 
     Matrix final_T;

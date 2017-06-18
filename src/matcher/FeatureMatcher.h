@@ -22,34 +22,27 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/cvdef.h>
 
+#include "matcher.h"
 #include "matrix.h"
 #include "filter.h"
-#include "ConvMatcher.h"
-#include "FeatureExtractor.h"
+#include "ConvNetwork.h"
+#include "Detector.h"
 
 using namespace cv;
 
-class CustomDetectorConvMatcher : public ConvMatcher {
+class FeatureMatcher : public Matcher {
 
 public:
-  CustomDetectorConvMatcher(parameters param, string &graph_path, Ptr<Feature2D> detector) : ConvMatcher(param, graph_path), detector(detector) {} ;
-  virtual ~CustomDetectorConvMatcher(); 
-
-//  virtual void bucketFeatures(int32_t max_features,float bucket_width,float bucket_height);
-
- // virtual void pushBackFetures (string left, string right="");
-  virtual void pushBackFeatures (shared_ptr<ImageDescriptor> left, shared_ptr<ImageDescriptor> right);
+  FeatureMatcher(parameters param, shared_ptr<Detector> detector) : Matcher(param), detector(detector) {} ;
+  virtual ~FeatureMatcher(); 
 
 protected:
 
-  void detect (Mat &img, vector<KeyPoint> &points, int cell_size=10, int num_per_cell = 5);
-  void nonMaxSuppression(vector<KeyPoint> &points, Mat &img, vector<Matcher::maximum> &maxima, float min_distance);
   virtual void computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int32_t &num1,int32_t* &max2,int32_t &num2,uint8_t* &I_du,uint8_t* &I_dv,uint8_t* &I_du_full,uint8_t* &I_dv_full);
 
 private:
-  Ptr<Feature2D> detector;
-  Mat left_img;
-  Mat right_img;
+  //Ptr<Feature2D> detector;
+  shared_ptr<Detector> detector;
  
 };
 

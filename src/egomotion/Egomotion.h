@@ -29,7 +29,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 
-class VisualOdometryStereoSeperate : public VisualOdometryStereo {
+class Egomotion: public VisualOdometryStereo {
 
 public:
 
@@ -44,10 +44,10 @@ public:
   };
 
   // constructor, takes as inpute a parameter structure
-  VisualOdometryStereoSeperate (parameters param);
+  Egomotion(parameters param, Matcher* matcher = nullptr);
   
   // deconstructor
-  ~VisualOdometryStereoSeperate ();
+  ~Egomotion();
   
   void setRotation(Matrix R);
   void setTranformation(Matrix T);
@@ -59,7 +59,7 @@ public:
 
 protected:
 
-  cv::Vec3d estimateRotation(std::vector<Matcher::p_match> &p_matched, VisualOdometryStereoSeperate::parameters param);
+  cv::Vec3d estimateRotation(std::vector<Matcher::p_match> &p_matched, Egomotion::parameters param);
   virtual std::vector<double>  estimateMotion (std::vector<Matcher::p_match> p_matched);
   virtual result               updateParameters(std::vector<Matcher::p_match> &p_matched,std::vector<int32_t> &active,std::vector<double> &tr,double step_size,double eps);
   virtual void                 computeResidualsAndJacobian(std::vector<double> &tr,std::vector<int32_t> &active);

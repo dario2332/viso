@@ -1,25 +1,3 @@
-/*
-Copyright 2012. All rights reserved.
-Institute of Measurement and Control Systems
-Karlsruhe Institute of Technology, Germany
-
-This file is part of libviso2.
-Authors: Andreas Geiger
-
-libviso2 is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or any later version.
-
-libviso2 is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301, USA 
-*/
-
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -28,8 +6,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <stdint.h>
 
 #include "slerp.h"
-#include "viso_stereo_seperate.h"
-#include "CustomDetectorConvMatcher.h"
+#include "Egomotion.h"
+#include "ConvMatcher.h"
 
 #include <png++/png.hpp>
 #include <boost/qvm/all.hpp>
@@ -77,7 +55,7 @@ std::condition_variable c_v;
 queue<shared_ptr<ImageDescriptor> > left_descriptors;
 queue<shared_ptr<ImageDescriptor> > right_descriptors;
 
-void loadImages(shared_ptr<FeatureExtractor> extractor, string dir, int num_frames) {
+void loadImages(shared_ptr<ConvNetwork> extractor, string dir, int num_frames) {
 
   for (int32_t i=0; i<num_frames; i++) {
 
@@ -124,30 +102,30 @@ int main (int argc, char** argv) {
   
   // set most important visual odometry parameters
   // for a full parameter list, look at: viso_stereo.h
-  VisualOdometryStereoSeperate::parameters param;
+  Egomotion::parameters param;
   loadCalibParams(param, dir);
   param.match.refinement = 0;
   param.match.half_resolution = 0;
   param.match.use_initial_descriptor = false;
-  param.match.sort = 1;
+  param.match.sort = 3;
   param.ransac_iters = 10000;
   param.inlier_threshold = 2.0;
   param.reweighting = false;
   param.match.multi_stage = 1;
-  param.bucket.max_features = 2;
-  //TODO  change maxima
-  //TODO  stereo right
+  param.bucket.max_features = 4;
+
   //param.match.nms_n = 1;
   //param.bucket.bucket_width = 2000;
   //param.bucket.bucket_height = 2000;
-  Ptr<Feature2D> detector = cv::ORB::create(20000);
+  //Ptr<Feature2D> detector = cv::ORB::create(20000);
   //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 20);
   //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 10);
+  shared_ptr<Detector> detector = DetectorFactory::constructDetector(DetectorFactory::ORB);
 
-  CustomDetectorConvMatcher *matcher_conv   = new CustomDetectorConvMatcher(param.match, graph_path, detector);
+  ConvMatcher *matcher_conv   = new ConvMatcher(param.match, detector);
   // init visual odometry
-  VisualOdometryStereoSeperate viso_main(param);
-  viso_main.setMatcher(matcher_conv);
+  Egomotion viso_main(param, matcher_conv);
+  //viso_main.setMatcher(matcher_conv);
   
   // current pose (this matrix transforms a point from the current
   // frame's camera coordinates to the first frame's camera coordinates)
@@ -155,7 +133,7 @@ int main (int argc, char** argv) {
 
   srand(0);
 
-  shared_ptr<FeatureExtractor> extractor(new FeatureExtractor(graph_path));
+  shared_ptr<ConvNetwork> extractor(new ConvNetwork(graph_path));
 
   std::thread t;
   for (int32_t i=0; i<num_frames; i++) {
@@ -179,7 +157,6 @@ int main (int argc, char** argv) {
       int32_t height = left_img.get_height();
 
       if (i == 0) {
-        extractor->initDims(width, height, 64);
         t = std::thread(loadImages, extractor, dir, num_frames);
       }
 

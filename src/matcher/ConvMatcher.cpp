@@ -13,7 +13,7 @@
 
 using namespace std;
 
-ConvMatcher::ConvMatcher(parameters param, string &graph_path) : Matcher(param) {
+ConvMatcher::ConvMatcher(parameters param, shared_ptr<Detector> detector) : FeatureMatcher(param, detector) {
 }
 
 ConvMatcher::~ConvMatcher() {
@@ -176,8 +176,8 @@ void ConvMatcher::fixMatches(vector<p_match> &matches) {
       //cout << i << endl;
       //int counter = 0;
       uf = true;
-      while (uf) {
-        bool u1 = fixMatch(matches[i].u1c, matches[i].v1c, matches[i].u1p, matches[i].v1p, left_curr_features, left_prev_features);
+      //while (uf) {
+        fixMatch(matches[i].u1c, matches[i].v1c, matches[i].u1p, matches[i].v1p, left_curr_features, left_prev_features);
         //cv::Mat img = imread(left_curr_features->image_path, cv::IMREAD_GRAYSCALE);
         //cv::Rect roi(matches[i].u1c-20, matches[i].v1c-20, 40, 40);
         //cv::drawKeypoints(img, vector<cv::KeyPoint> {cv::KeyPoint(matches[i].u1c, matches[i].v1c, 0)}, img);
@@ -190,23 +190,23 @@ void ConvMatcher::fixMatches(vector<p_match> &matches) {
         //cv::Mat area2(img2, roi2);
         //cv::imshow("point2", area2);
         ////if (u1) counter++;
-        bool u2 = fixMatch(matches[i].u1p, matches[i].v1p, matches[i].u1c, matches[i].v1c, left_prev_features, left_curr_features);
+        //bool u2 = fixMatch(matches[i].u1p, matches[i].v1p, matches[i].u1c, matches[i].v1c, left_prev_features, left_curr_features);
         ////if (u2) counter++;
-        uf = u1 || u2;
+        //uf = u1 || u2;
         //cout << counter << endl;
         //cv::waitKey(0);
-      }
+      //}
 
       //uf = true;
       //while (uf) {
-      //  bool u1 = fixMatch(matches[i].u1c, matches[i].v1c, matches[i].u2c, matches[i].v2c, left_curr_features, right_curr_features);
+        fixMatch(matches[i].u1c, matches[i].v1c, matches[i].u2c, matches[i].v2c, left_curr_features, right_curr_features);
       //  bool u2 = fixMatch(matches[i].u1p, matches[i].v1p, matches[i].u1c, matches[i].v1c, left_prev_features, left_curr_features);
       //  uf = u1 || u2;
       //}
 
       //uf = true;
       //while (uf) {
-      //  bool u1 = fixMatch(matches[i].u1p, matches[i].v1p, matches[i].u2p, matches[i].v2p, left_prev_features, right_prev_features);
+        fixMatch(matches[i].u1p, matches[i].v1p, matches[i].u2p, matches[i].v2p, left_prev_features, right_prev_features);
       //  bool u2 = fixMatch(matches[i].u2p, matches[i].v2p, matches[i].u1p, matches[i].v1p, right_prev_features, left_prev_features);
       //  uf = u1 || u2;
       //}
@@ -281,7 +281,7 @@ void ConvMatcher::bucketFeatures(int32_t max_features,float bucket_width,float b
     // shuffle bucket indices randomly
     std::random_shuffle(buckets[i].begin(),buckets[i].end());
 
-    //fixMatches(buckets[i]);
+    fixMatches(buckets[i]);
 
     if (param.sort == 1)
       sortMatches(buckets[i]);
@@ -309,16 +309,6 @@ void ConvMatcher::bucketFeatures(int32_t max_features,float bucket_width,float b
 }
 
 
-//void ConvMatcher::pushBackFetures (string left, string right) {
-//  static int counter = 0;
-//  swap(left_prev_features, left_curr_features);
-//  swap(right_prev_features, right_curr_features);
-//
-//  left_curr_features->extractFeatures(left);
-//  if (right != "")
-//    right_curr_features->extractFeatures(right);
-//}
-
 void ConvMatcher::pushBackFeatures (shared_ptr<ImageDescriptor> left, shared_ptr<ImageDescriptor> right) {
   swap(left_prev_features, left_curr_features);
   swap(right_prev_features, right_curr_features);
@@ -330,12 +320,6 @@ void ConvMatcher::pushBackFeatures (shared_ptr<ImageDescriptor> left, shared_ptr
     //right_curr_features->extractFeatures(right);
 }
 
-//void ConvMatcher::setDims(int W, int H, int D) {
-//  left_prev_features->initDims(W, H, D);
-//  left_curr_features->initDims(W, H, D);
-//  right_prev_features->initDims(W, H, D);
-//  right_curr_features->initDims(W, H, D);
-//}
 
 void ConvMatcher::computeDescriptor (const int32_t &u,const int32_t &v, float *desc_addr) {
   float* features = left_curr_features->getFeature(u, v);

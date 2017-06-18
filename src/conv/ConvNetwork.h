@@ -1,5 +1,5 @@
-#ifndef FEATURE_EXTRACTOR_H
-#define FEATURE_EXTRACTOR_H
+#ifndef CONV_H
+#define CONV_H
 
 #include <iostream>
 #include <fstream>
@@ -23,6 +23,7 @@
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
 
+#include "ImageDescriptor.h"
 
 using namespace std;
 using tensorflow::Flag;
@@ -31,29 +32,14 @@ using tensorflow::Status;
 using tensorflow::string;
 using tensorflow::int32;
 
-class ImageDescriptor {
-  
-public:
-  ImageDescriptor (int w, int h, int d, string &image_path) : w(w), h(h), d(d), image_path(image_path), data(vector<float> (w*h*d)) {};
-  virtual ~ImageDescriptor () {};
-  float* getFeature(int u, int v);
-
-  int w, d, h;
-  vector<float> data;
-  string image_path;
-};
-
-class FeatureExtractor {
+class ConvNetwork {
 
 public:
-    FeatureExtractor(string model_path, string left_input_layer="input_left_forward", string right_input_layer="input_right_forward", 
+    ConvNetwork(string model_path, string left_input_layer="input_left_forward", string right_input_layer="input_right_forward", 
                                         string left_output_layer="output_L", string right_output_layer="output_R");
-    ~FeatureExtractor();
+    ~ConvNetwork();
     
-    int W, D, H;
-    //float* getFeature(int u, int v);
     void extractFeatures(string &left_image_path, string &right_image_path, shared_ptr<ImageDescriptor> &left, shared_ptr<ImageDescriptor> &right);
-    void initDims(int w, int h, int d);
 
 private:
     std::unique_ptr<tensorflow::Session> session;
@@ -68,4 +54,4 @@ private:
 
 };
 
-#endif //FEATURE_EXTRACTOR_H
+#endif //CONV_H

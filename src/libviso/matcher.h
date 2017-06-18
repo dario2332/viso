@@ -143,12 +143,6 @@ public:
 
   void computeDescriptor (const int32_t &u,const int32_t &v,uint8_t *desc_addr);
   
-protected:
-  virtual void findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,
-                         std::vector<int32_t> *k2,const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
-                         int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
-
-//private:
 
   // structure for storing interest points
   struct maximum {
@@ -160,6 +154,14 @@ protected:
     maximum() {}
     maximum(int32_t u,int32_t v,int32_t val,int32_t c):u(u),v(v),val(val),c(c) {}
   };
+
+protected:
+  virtual void findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,
+                         std::vector<int32_t> *k2,const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
+                         int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_=-1,double v_=-1);
+
+//private:
+
   
   // u/v ranges for matching stage 0-3
   struct range {

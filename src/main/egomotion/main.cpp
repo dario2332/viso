@@ -7,7 +7,7 @@
 
 #include "slerp.h"
 #include "util.h"
-#include "viso_stereo_seperate.h"
+#include "Egomotion.h"
 #include <png++/png.hpp>
 
 using namespace cv;
@@ -33,7 +33,7 @@ int main (int argc, char** argv) {
   
   // set most important visual odometry parameters
   // for a full parameter list, look at: viso_stereo.h
-  VisualOdometryStereoSeperate::parameters param;
+  Egomotion::parameters param;
   loadCalibParams(param, dir);
   param.match.refinement = 2;//2;
   param.match.half_resolution = 0;
@@ -43,7 +43,7 @@ int main (int argc, char** argv) {
  // param.match.multi_stage = 1;
 
   // init visual odometry
-  VisualOdometryStereoSeperate viso_main(param);
+  Egomotion viso_main(param);
   
   // current pose (this matrix transforms a point from the current
   // frame's camera coordinates to the first frame's camera coordinates)

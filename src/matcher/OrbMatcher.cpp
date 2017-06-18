@@ -11,7 +11,7 @@ OrbMatcher::OrbMatcher(string &graph_path, Ptr<Feature2D> detector, OrbMatcher::
 OrbMatcher::~OrbMatcher() {
 }
 
-float OrbMatcher::complexMetric(const KeyPoint &point1, const KeyPoint &point2, FeatureExtractor *first_extractor, FeatureExtractor *second_extractor) {
+float OrbMatcher::complexMetric(const KeyPoint &point1, const KeyPoint &point2, ConvNetwork *first_extractor, ConvNetwork *second_extractor) {
   int frame_radius = 10;
 
   int u1 = round(point1.pt.x) - frame_radius;
@@ -35,7 +35,7 @@ float OrbMatcher::complexMetric(const KeyPoint &point1, const KeyPoint &point2, 
 }
 
 vector<int> OrbMatcher::oneWayMatching(const vector<KeyPoint> &points1, const vector<KeyPoint> &points2, 
-                                       FeatureExtractor *first_extractor, FeatureExtractor *second_extractor, vector<float> &similarity) {
+                                       ConvNetwork *first_extractor, ConvNetwork *second_extractor, vector<float> &similarity) {
   int max_distance = params.matching_radius;
   vector<int> p1_to_p2;
   int top_n = 10;
@@ -124,7 +124,7 @@ void OrbMatcher::nonMaxSuppression(vector<KeyPoint> &points, Mat &img, float min
   points = filtered_points;
 }
 
-void OrbMatcher::findDisparity(float &u, float &v, FeatureExtractor *left_extractor, FeatureExtractor *right_extractor) {
+void OrbMatcher::findDisparity(float &u, float &v, ConvNetwork *left_extractor, ConvNetwork *right_extractor) {
   int disp_max = params.disp_max;
 
   int u_l = round(u);

@@ -19,23 +19,25 @@ libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA 
 */
 
-#include "viso_stereo_seperate.h"
+#include "Egomotion.h"
 
 using namespace std;
 
-VisualOdometryStereoSeperate::VisualOdometryStereoSeperate (parameters param) : param(param), VisualOdometryStereo(param) {
+Egomotion::Egomotion(parameters param, Matcher *matcher) : param(param), VisualOdometryStereo(param) {
+  if (matcher != nullptr)
+    setMatcher(matcher);
 }
 
-VisualOdometryStereoSeperate::~VisualOdometryStereoSeperate() {
+Egomotion::~Egomotion() {
 }
 
-void VisualOdometryStereoSeperate::setMatcher(Matcher* new_matcher) {
+void Egomotion::setMatcher(Matcher* new_matcher) {
   delete matcher;
   matcher = new_matcher;
   matcher->setIntrinsics(param.calib.f,param.calib.cu,param.calib.cv,param.base);
 }
 
-cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match> &p_matched, VisualOdometryStereoSeperate::parameters param) {
+cv::Vec3d Egomotion::estimateRotation(vector<Matcher::p_match> &p_matched, Egomotion::parameters param) {
   cv::Mat E, R, t, mask;
   vector<cv::Point2d> points1, points2;
   for (int i = 0; i < p_matched.size(); ++i) {
@@ -64,7 +66,7 @@ cv::Vec3d VisualOdometryStereoSeperate::estimateRotation(vector<Matcher::p_match
   return rotationMatrixToEulerAngles(R);
 }
 
-bool VisualOdometryStereoSeperate::calculateTranslation(Matrix R) {
+bool Egomotion::calculateTranslation(Matrix R) {
   setRotation(R);
   param.estimate_rotation = false;
   bool result = updateMotion();
@@ -72,15 +74,15 @@ bool VisualOdometryStereoSeperate::calculateTranslation(Matrix R) {
   return result;
 }
 
-void VisualOdometryStereoSeperate::setRotation(Matrix R) {
+void Egomotion::setRotation(Matrix R) {
   R_ = R;
 }
 
-void VisualOdometryStereoSeperate::setTranformation(Matrix T) {
+void Egomotion::setTranformation(Matrix T) {
   Tr_delta = T;
 }
 
-vector<double> VisualOdometryStereoSeperate::estimateMotion (vector<Matcher::p_match> p_matched) {
+vector<double> Egomotion::estimateMotion (vector<Matcher::p_match> p_matched) {
   
   // get number of matches
   int32_t N  = p_matched.size();
@@ -218,7 +220,7 @@ vector<double> VisualOdometryStereoSeperate::estimateMotion (vector<Matcher::p_m
 }
 
 
-VisualOdometryStereoSeperate::result VisualOdometryStereoSeperate::updateParameters(vector<Matcher::p_match> &p_matched,vector<int32_t> &active,vector<double> &tr,double step_size,double eps) {
+Egomotion::result Egomotion::updateParameters(vector<Matcher::p_match> &p_matched,vector<int32_t> &active,vector<double> &tr,double step_size,double eps) {
   
   // we need at least 3 observations
   if (active.size()<3)
@@ -265,7 +267,7 @@ VisualOdometryStereoSeperate::result VisualOdometryStereoSeperate::updateParamet
   }
 }
 
-void VisualOdometryStereoSeperate::computeResidualsAndJacobian(vector<double> &tr,vector<int32_t> &active) {
+void Egomotion::computeResidualsAndJacobian(vector<double> &tr,vector<int32_t> &active) {
 
   // extract motion parameters
   double rx = tr[0]; double ry = tr[1]; double rz = tr[2];
