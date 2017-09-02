@@ -104,15 +104,15 @@ int main (int argc, char** argv) {
   // for a full parameter list, look at: viso_stereo.h
   Egomotion::parameters param;
   loadCalibParams(param, dir);
-  param.match.refinement = 0;
+  param.match.refinement = 2;
   param.match.half_resolution = 0;
   param.match.use_initial_descriptor = false;
-  param.match.sort = 3;
+  param.match.sort = 1;
   param.ransac_iters = 10000;
   param.inlier_threshold = 2.0;
   param.reweighting = false;
   param.match.multi_stage = 1;
-  param.bucket.max_features = 4;
+  param.bucket.max_features = 5;
 
   //param.match.nms_n = 1;
   //param.bucket.bucket_width = 2000;
@@ -120,7 +120,7 @@ int main (int argc, char** argv) {
   //Ptr<Feature2D> detector = cv::ORB::create(20000);
   //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 20);
   //Ptr<Feature2D> detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 10);
-  shared_ptr<Detector> detector = DetectorFactory::constructDetector(DetectorFactory::ORB);
+  shared_ptr<Detector> detector = DetectorFactory::constructDetector(DetectorFactory::Harris);
 
   ConvMatcher *matcher_conv   = new ConvMatcher(param.match, detector);
   // init visual odometry

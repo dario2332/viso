@@ -38,6 +38,9 @@ protected:
   Ptr<Feature2D> detector;
 };
 
+class Harris : public Detector {
+  virtual void detectFeatures(Mat img, vector<KeyPoint> &points);
+};
 
 class DetectorFactory {
 

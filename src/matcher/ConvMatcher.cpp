@@ -37,6 +37,25 @@ shared_ptr<ImageDescriptor> ConvMatcher::getExtractor(int32_t* m) {
   }
 }
 
+shared_ptr<ImageDescriptor> ConvMatcher::getExtractor(const uint8_t* m) {
+  if (m == I1p_du || m == I1p_dv) {
+    return left_prev_features;
+  }
+  else if (m == I1c_du || m == I1c_dv) {
+    return left_curr_features;
+  }
+  else if (m == I2c_du || m == I2c_dv) {
+    return right_curr_features;
+  }
+  else if (m == I2p_du || m == I2p_dv) {
+    return right_prev_features;
+  }
+  else {
+    cout << "ERROR" << endl;
+  }
+}
+
+
 void ConvMatcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,vector<int32_t> *k2,
                                 const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
                                 int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_,double v_) {
@@ -281,7 +300,7 @@ void ConvMatcher::bucketFeatures(int32_t max_features,float bucket_width,float b
     // shuffle bucket indices randomly
     std::random_shuffle(buckets[i].begin(),buckets[i].end());
 
-    fixMatches(buckets[i]);
+    //fixMatches(buckets[i]);
 
     if (param.sort == 1)
       sortMatches(buckets[i]);
@@ -325,3 +344,134 @@ void ConvMatcher::computeDescriptor (const int32_t &u,const int32_t &v, float *d
   float* features = left_curr_features->getFeature(u, v);
   std::copy (features, features+64, desc_addr);
 }
+
+bool ConvMatcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+                        const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
+                        const float &u1,const float &v1,
+                        float       &u2,float       &v2,
+                        Matrix At,Matrix AtA,
+                        uint8_t* desc_buffer) {
+
+
+  // check if parabolic fitting is feasible (descriptors are within margin)
+  if (u2-3<margin || u2+3>dims2[0]-1-margin || v2-3<margin || v2+3>dims2[1]-1-margin)
+    return false;
+  
+  auto first_extractor = getExtractor(I1_du);
+  auto second_extractor = getExtractor(I2_du);
+  // compute reference descriptor
+  
+  float *first = first_extractor->getFeature(round(u1), round(v1));
+//  __m128i xmm1,xmm2;
+//  computeSmallDescriptor(I1_du,I1_dv,dims1[2],(int32_t)u1,(int32_t)v1,desc_buffer);
+//  xmm1 = _mm_load_si128((__m128i*)(desc_buffer));
+  
+  // compute cost matrix
+  int32_t cost[49];
+  for (int32_t dv=0; dv<7; dv++) {
+    for (int32_t du=0; du<7; du++) {
+      float *second = second_extractor->getFeature(round(u2+du-3), round(v2+dv-3));
+      //computeSmallDescriptor(I2_du,I2_dv,dims2[2],(int32_t)u2+du-3,(int32_t)v2+dv-3,desc_buffer);
+      //xmm2 = _mm_load_si128((__m128i*)(desc_buffer));
+      //xmm2 = _mm_sad_epu8(xmm1,xmm2);
+      cost[dv*7+du] = 40 -10*cblas_sdot(left_curr_features->d, first, 1, second, 1); //_mm_extract_epi16(xmm2,0)+_mm_extract_epi16(xmm2,4);
+    }
+  }
+  
+  // compute minimum
+  int32_t min_ind  = 0;
+  int32_t min_cost = cost[0];
+  for (int32_t i=1; i<49; i++) {
+    if (cost[i]<min_cost) {
+      min_ind   = i;
+      min_cost  = cost[i];
+    }
+  }
+  
+  // get indices
+  int32_t du = min_ind%7;
+  int32_t dv = min_ind/7;
+  
+  // if minimum is at borders => remove this match
+  if (du==0 || du==6 || dv==0 || dv==6)
+    return false;
+  
+  // solve least squares system
+  Matrix c(9,1);
+  for (int32_t i=-1; i<=+1; i++) {
+    for (int32_t j=-1; j<=+1; j++) {
+      int32_t cost_curr = cost[(dv+i)*7+(du+j)];
+      // if (i!=0 && j!=0 && cost_curr<=min_cost+150)
+        // return false;
+      c.val[(i+1)*3+(j+1)][0] = cost_curr;
+    }
+  }
+  Matrix b = At*c;
+  if (!b.solve(AtA))
+    return false;
+  
+  // extract relative coordinates
+  float divisor = (b.val[2][0]*b.val[2][0]-4.0*b.val[0][0]*b.val[1][0]);
+  if (fabs(divisor)<1e-8 || fabs(b.val[2][0])<1e-8)
+    return false;
+  float ddv = (2.0*b.val[0][0]*b.val[4][0]-b.val[2][0]*b.val[3][0])/divisor;
+  float ddu = -(b.val[4][0]+2.0*b.val[1][0]*ddv)/b.val[2][0];
+  if (fabs(ddu)>=1.0 || fabs(ddv)>=1.0)
+    return false;
+  
+  // update target
+  u2 += (float)du-3.0+ddu;
+  v2 += (float)dv-3.0+ddv;
+  
+  // return true on success
+  //cout << "true" << endl;
+  return true;
+}
+void ConvMatcher::relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+                       const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
+                       const float &u1,const float &v1,
+                       float       &u2,float       &v2,
+                       uint8_t* desc_buffer) { 
+
+  // check if parabolic fitting is feasible (descriptors are within margin)
+  if (u2-2<margin || u2+2>dims2[0]-1-margin || v2-2<margin || v2+2>dims2[1]-1-margin)
+    return;
+  
+  auto first_extractor = getExtractor(I1_du);
+  auto second_extractor = getExtractor(I2_du);
+  // compute reference descriptor
+  
+  float *first = first_extractor->getFeature(round(u1), round(v1));
+  // compute reference descriptor
+  //__m128i xmm1,xmm2;
+  //computeSmallDescriptor(I1_du,I1_dv,dims1[2],(int32_t)u1,(int32_t)v1,desc_buffer);
+  //xmm1 = _mm_load_si128((__m128i*)(desc_buffer));
+  
+  // compute cost matrix
+  int32_t cost[25];
+  for (int32_t dv=0; dv<5; dv++) {
+    for (int32_t du=0; du<5; du++) {
+      float *second = second_extractor->getFeature(round(u2+du-2), round(v2+dv-2));
+      //computeSmallDescriptor(I2_du,I2_dv,dims2[2],(int32_t)u2+du-2,(int32_t)v2+dv-2,desc_buffer);
+      //xmm2 = _mm_load_si128((__m128i*)(desc_buffer));
+      //xmm2 = _mm_sad_epu8(xmm1,xmm2);
+      cost[dv*5+du] = 40-10*cblas_sdot(left_curr_features->d, first, 1, second, 1);//_mm_extract_epi16(xmm2,0)+_mm_extract_epi16(xmm2,4);
+    }
+  }
+  
+  // compute minimum
+  int32_t min_ind  = 0;
+  int32_t min_cost = cost[0];
+  for (int32_t i=1; i<25; i++) {
+    if (cost[i]<min_cost) {
+      min_ind   = i;
+      min_cost  = cost[i];
+    }
+  }
+  
+  // update target
+  u2 += (float)(min_ind%5)-2.0;
+  v2 += (float)(min_ind/5)-2.0;
+
+}
+

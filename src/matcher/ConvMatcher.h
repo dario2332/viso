@@ -44,12 +44,25 @@ private:
   float matchScore(const p_match &match, bool only_left_score=false);
 
   shared_ptr<ImageDescriptor> getExtractor(int32_t* m);
+  shared_ptr<ImageDescriptor> getExtractor(const uint8_t* m);
 
   shared_ptr<ImageDescriptor> left_prev_features;
   shared_ptr<ImageDescriptor> right_prev_features;
   shared_ptr<ImageDescriptor> left_curr_features;
   shared_ptr<ImageDescriptor> right_curr_features;
- 
+
+  virtual bool parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+                        const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
+                        const float &u1,const float &v1,
+                        float       &u2,float       &v2,
+                        Matrix At,Matrix AtA,
+                        uint8_t* desc_buffer);
+  virtual void relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+                       const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
+                       const float &u1,const float &v1,
+                       float       &u2,float       &v2,
+                       uint8_t* desc_buffer);
+
 };
 
 #endif

@@ -38,7 +38,7 @@ public:
       base             = 1.0;
       ransac_iters     = 200;
       inlier_threshold = 2.0;
-      reweighting      = true;
+      reweighting      = false;
     }
   };
 

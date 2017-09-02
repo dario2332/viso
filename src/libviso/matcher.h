@@ -224,13 +224,13 @@ protected:
   void removeOutliers (std::vector<Matcher::p_match> &p_matched,int32_t method);
 
   // parabolic fitting
-  bool parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+  virtual bool parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
                         const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
                         const float &u1,const float &v1,
                         float       &u2,float       &v2,
                         Matrix At,Matrix AtA,
                         uint8_t* desc_buffer);
-  void relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
+  virtual void relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const int32_t* dims1,
                        const uint8_t* I2_du,const uint8_t* I2_dv,const int32_t* dims2,
                        const float &u1,const float &v1,
                        float       &u2,float       &v2,

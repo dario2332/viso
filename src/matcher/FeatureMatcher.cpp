@@ -51,8 +51,10 @@ void FeatureMatcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &m
 
   detector->detectFeatures(img, curr_points);
 
+
   //cv::drawKeypoints(img, curr_points, img);
   //cv::imshow("keypoints", img);
+  //cout << "Size: " << curr_points.size() << endl;
   //cv::waitKey(0);
 
   // extract sparse maxima (1st pass) via non-maximum suppression

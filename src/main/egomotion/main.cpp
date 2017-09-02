@@ -40,6 +40,7 @@ int main (int argc, char** argv) {
   param.bucket.max_features = 2;
   param.match.use_initial_descriptor = false;
   param.match.sort = 1;
+  param.reweighting = true;
  // param.match.multi_stage = 1;
 
   // init visual odometry

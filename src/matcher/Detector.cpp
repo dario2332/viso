@@ -8,7 +8,7 @@ void Detector::nonMaxSuppression(vector<KeyPoint> &points, float min_distance) {
     if (point.pt.x > max_col) max_col = point.pt.x;
     if (point.pt.y > max_row) max_row = point.pt.y;
   }
-  Mat response_matrix = Mat::zeros(max_row, max_col, CV_32S);
+  Mat response_matrix = Mat::zeros(max_row + min_distance, max_col + min_distance, CV_32S);
 
   sort(points.begin(), points.end(), [this](KeyPoint &point1, KeyPoint& point2) {return this->compareFeatures(point1, point2);});
   points.insert(points.begin(), KeyPoint(0, 0, 0));
@@ -45,11 +45,48 @@ bool Detector::compareFeatures(const KeyPoint &point1, const KeyPoint &point2) c
   return point1.response > point2.response;
 }
 
+void Harris::detectFeatures(Mat img, vector<KeyPoint> &points) {
+  //cout << "Start" << endl;
+  Mat out;
+  float max = -100000;
+  float min = 100000;
+  //Mat dst, dst_norm, dst_norm_scaled;
+  //dst = Mat::zeros( img.size(), CV_32FC1 );
+ 
+    // Detecting corners
+  cornerHarris( img, out, 2, 11, 0.05, BORDER_DEFAULT );
+ 
+  //cv::cornerHarris(img, out, 7, 5, 0.05);
+  //normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+  //convertScaleAbs( dst_norm, dst_norm_scaled );
+  //dst_norm_scaled = dst_norm;
+ 
+  //imshow( "corners_window", out );
+  //waitKey(0);
+  for (int i = 0; i < out.rows; ++i) {
+    for (int j = 0; j < out.cols; ++j) {
+      float response = out.at<float>(i, j);
+      if (response > 100)
+        points.push_back(KeyPoint(j, i, out.at<float>(i, j)));
+      //cout << out.at<float>(i, j) << endl;
+      
+      if (response > max) max = response;
+      if (response < min) min = response;
+    }
+  }
+
+  //cout << max << " " << min << endl;
+  //cout << "End" << endl;
+}
 
 shared_ptr<Detector> DetectorFactory::constructDetector(int d) {
   if (d == ORB) {
-    Ptr<Feature2D> cv_detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 1);
+    Ptr<Feature2D> cv_detector = cv::ORB::create(20000, 1.2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 2);
     auto ptr = shared_ptr<Detector>(new OpenCVFeature2dWrapper(cv_detector));
+    return ptr;
+  }
+  if (d == Harris) {
+    auto ptr = shared_ptr<Detector>(new ::Harris());
     return ptr;
   }
   return nullptr;
